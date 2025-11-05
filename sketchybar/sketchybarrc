@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# SketchyBar configuration with AeroSpace workspace integration
+# Translucent black and gray color scheme
+
+PLUGIN_DIR="$CONFIG_DIR/plugins"
+
+# True black and gray color scheme
+BLACK=0xff000000     # True black
+WHITE=0xffffffff     # True white
+GRAY_LIGHT=0xffe0e0e0  # Light gray (almost white)
+GRAY_MEDIUM=0xff808080  # Medium gray
+GRAY_DARK=0xff404040    # Dark gray
+GRAY_DARKER=0xff202020  # Darker gray
+
+##### Bar Appearance #####
+sketchybar --bar position=top \
+                 height=32 \
+                 blur_radius=50 \
+                 color=0xd0000000 \
+                 topmost=window
+
+##### Changing Defaults #####
+default=(
+  padding_left=5
+  padding_right=5
+  icon.font="LigaSFMonoNerdFont:Bold:14.0"
+  label.font="LigaSFMonoNerdFont:Regular:13.0"
+  icon.color="$WHITE"
+  label.color="$WHITE"
+  icon.padding_left=4
+  icon.padding_right=4
+  label.padding_left=4
+  label.padding_right=4
+)
+sketchybar --default "${default[@]}"
+
+##### AeroSpace Workspace Indicators #####
+# Add event for aerospace workspace changes
+sketchybar --add event aerospace_workspace_change
+
+# OS indicator (leftmost position)
+OS_ICON="🐅"
+
+sketchybar --add item os_indicator left \
+           --set os_indicator \
+           icon="$OS_ICON" \
+           icon.color="$WHITE" \
+           icon.padding_left=8 \
+           icon.padding_right=4 \
+           label.drawing=off
+
+# Create workspace indicators - prefer workspaces with windows, fallback to default set
+# Try to get workspaces that have windows
+WORKSPACES_WITH_WINDOWS=$(aerospace list-workspaces --monitor all --empty no 2>/dev/null)
+
+# If no workspaces with windows found, use default set: 1-6 and 11
+if [ -z "$WORKSPACES_WITH_WINDOWS" ]; then
+  WORKSPACES_WITH_WINDOWS="1 2 3 4 5 6 11"
+fi
+
+# Create workspace indicators for workspaces with windows (or fallback set)
+for sid in $WORKSPACES_WITH_WINDOWS; do
+  sketchybar --add item space.$sid left \
+             --set space.$sid \
+             background.color="$GRAY_DARK" \
+             background.corner_radius=0 \
+             background.height=20 \
+             background.drawing=off \
+             icon.drawing=off \
+             label="$sid" \
+             label.color="$WHITE" \
+             label.align=center \
+             label.width=24 \
+             padding_left=2 \
+             padding_right=2 \
+             click_script="aerospace workspace $sid"
+done
+
+# Add a single updater item that updates all workspaces efficiently
+sketchybar --add item workspace_updater left \
+           --subscribe workspace_updater aerospace_workspace_change \
+           --set workspace_updater \
+           drawing=off \
+           script="$PLUGIN_DIR/workspace_updater.sh"
+
+# Add current application display (appears to the right of active workspace)
+sketchybar --add item current_app left \
+           --subscribe current_app aerospace_workspace_change \
+           --set current_app \
+           update_freq=2 \
+           label.color="$WHITE" \
+           label.font="LigaSFMonoNerdFont:Regular:12.0" \
+           padding_left=8 \
+           padding_right=4 \
+           icon.drawing=off \
+           script="$PLUGIN_DIR/workspace_updater.sh"
+
+##### Adding Right Items #####
+# Add keyboard change event and clock update event
+sketchybar --add event keyboard_change
+sketchybar --add event clock_update
+
+# Right side items (ordered right to left): Time/Date, Keyboard, Volume, Battery, Camera, Weather
+# Note: Items are added in order, first item appears rightmost
+sketchybar --add item clock right \
+           --set clock \
+           update_freq=10 \
+           icon.color="$GRAY_LIGHT" \
+           label.color="$WHITE" \
+           script="$PLUGIN_DIR/clock.sh" \
+           --subscribe clock clock_update \
+           \
+           --add item volume right \
+           --set volume \
+           icon.color="$GRAY_LIGHT" \
+           label.color="$WHITE" \
+           script="$PLUGIN_DIR/volume.sh" \
+           --subscribe volume volume_change \
+           \
+           --add item battery right \
+           --set battery \
+           update_freq=120 \
+           icon.color="$GRAY_LIGHT" \
+           label.color="$WHITE" \
+           script="$PLUGIN_DIR/battery.sh" \
+           --subscribe battery system_woke power_source_change \
+           \
+           --add item weather right \
+           --set weather \
+           update_freq=900 \
+           icon.color="$GRAY_LIGHT" \
+           label.color="$WHITE" \
+           script="$PLUGIN_DIR/weather.sh"
+
+##### Force all scripts to run the first time (never do this in a script) #####
+sketchybar --update
