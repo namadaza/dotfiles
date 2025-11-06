@@ -60,7 +60,7 @@ automatically-unhide-macos-hidden-apps = false
     inner.vertical =   0
     outer.left =       0
     outer.bottom =     0
-    outer.top =        [{ monitor."Built-in Retina Display" = 0 }, { monitor."LG HDR 4K" = 28 }, 0]
+    outer.top =        [{ monitor."Built-in Retina Display" = 0 }, { monitor."LG HDR 4K" = 32 }, 0]
     outer.right =      0
 
 # 'main' binding mode declaration
@@ -132,6 +132,8 @@ automatically-unhide-macos-hidden-apps = false
     ctrl-7 = 'workspace 7'
     ctrl-8 = 'workspace 8'
     ctrl-9 = 'workspace 9'
+    alt-1 = 'workspace 10'
+    alt-2 = 'workspace 11'
     alt-a = 'workspace A' # In your config, you can drop workspace bindings that you don't need
     alt-b = 'workspace B'
     alt-c = 'workspace C'

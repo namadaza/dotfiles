@@ -16,9 +16,7 @@ if [ -z "$WEATHER" ]; then
 else
   # Split the response into condition and temperature
   CONDITION=$(echo "$WEATHER" | cut -d',' -f1)
-  TEMP_C=$(echo "$WEATHER" | cut -d',' -f2 | sed 's/[^0-9.-]//g')  # Extract numeric value, remove units
-  # Convert Celsius to Fahrenheit: F = C * 9/5 + 32 (rounded to nearest integer)
-  TEMP=$(printf "%.0f" $(echo "scale=2; $TEMP_C * 9 / 5 + 32" | bc))
+  TEMP=$(echo "$WEATHER" | cut -d',' -f2)
   # Map condition to Nerd Font weather icons
   case "$CONDITION" in
     *[Cc]lear*|*[Ss]unny*) ICON="󰖙" ;;  # nf-md-weather_sunny
@@ -29,7 +27,7 @@ else
     *[Ff]og*|*[Mm]ist*) ICON="󰖑" ;;  # nf-md-weather_fog
     *) ICON="󰖕" ;;  # nf-md-weather_partly_cloudy (default)
   esac
-  LABEL="$TEMP F"
+  LABEL="$TEMP"
 fi
 
 sketchybar --set "$NAME" icon="$ICON" icon.color="$GRAY_LIGHT" label="$LABEL" label.color="$WHITE"

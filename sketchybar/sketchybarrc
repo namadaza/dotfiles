@@ -12,12 +12,13 @@ GRAY_LIGHT=0xffe0e0e0  # Light gray (almost white)
 GRAY_MEDIUM=0xff808080  # Medium gray
 GRAY_DARK=0xff404040    # Dark gray
 GRAY_DARKER=0xff202020  # Darker gray
+TRANSPARENT_BLACK=0xd0000000 # Transparent black
 
 ##### Bar Appearance #####
 sketchybar --bar position=top \
                  height=32 \
                  blur_radius=50 \
-                 color=0xd0000000 \
+                 color=$TRANSPARENT_BLACK \
                  topmost=window
 
 ##### Changing Defaults #####
