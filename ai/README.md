@@ -16,7 +16,7 @@ This is an AI-powered code refactoring tool that reads a file containing code an
 
 2. **API Key**: Set up your Google API key:
 
-   - Create a file at `~/.config/google.token`
+   - Create a file at `vendors/google.token`
    - Add your Google API key to this file (one line, no extra whitespace)
 
 3. **Dependencies**: Install dependencies:
