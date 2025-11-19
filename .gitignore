@@ -6,3 +6,6 @@ coc-settings.json
 .luarc.json
 after
 .DS_Store
+node_modules
+.env.local
+*.token
