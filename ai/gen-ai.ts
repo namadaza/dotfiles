@@ -1,16 +1,40 @@
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
-import { fileURLToPath } from "url";
+import { AnthropicChat } from "./vendors/anthropic";
 import { GoogleChat } from "./vendors/google";
+import { OpenAIChat } from "./vendors/openai";
+import { XAIChat } from "./vendors/xai";
 import { countTokens } from "gpt-tokenizer";
 
 export const MODELS: Record<string, string> = {
+  // OpenAI GPT-5.1 family
+  "g-": "openai:gpt-5.1:low",
+  g: "openai:gpt-5.1:medium",
+  "g+": "openai:gpt-5.1:high",
+  G: "openai:gpt-5.1:high",
+
+  // Anthropic Claude
+  "s-": "anthropic:claude-sonnet-4-5-20250929:low",
+  s: "anthropic:claude-sonnet-4-5-20250929:medium",
+  "s+": "anthropic:claude-sonnet-4-5-20250929:high",
+  S: "anthropic:claude-sonnet-4-5-20250929:high",
+
+  "o-": "anthropic:claude-opus-4-1-20250805:low",
+  o: "anthropic:claude-opus-4-1-20250805:medium",
+  "o+": "anthropic:claude-opus-4-1-20250805:high",
+  O: "anthropic:claude-opus-4-1-20250805:high",
+
   // Google Gemini
   "i-": "google:gemini-3-pro-preview:low",
   i: "google:gemini-3-pro-preview:medium",
   "i+": "google:gemini-3-pro-preview:high",
   I: "google:gemini-3-pro-preview:high",
+
+  // xAI Grok
+  "x-": "xai:grok-4-0709:low",
+  x: "xai:grok-4-0709:medium",
+  X: "xai:grok-4-0709:high",
 };
 
 export type Vendor = "openai" | "anthropic" | "google" | "openrouter" | "xai";
@@ -92,9 +116,7 @@ function inferVendor(model: string): Vendor {
 }
 
 async function getToken(vendor: string): Promise<string> {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  const tokenPath = path.join(__dirname, "vendors", `${vendor}.token`);
+  const tokenPath = path.join(os.homedir(), ".config", `${vendor}.token`);
   try {
     return (await fs.readFile(tokenPath, "utf8")).trim();
   } catch (err) {
@@ -262,6 +284,18 @@ function buildVendorConfig(
 ): VendorConfig {
   const cfg: VendorConfig = {};
 
+  if (vendor === "openai" || vendor === "openrouter") {
+    const reasoning = mapThinkingToOpenAI(model, thinking);
+    if (reasoning) {
+      cfg.openai = reasoning;
+    }
+  }
+
+  const anthropic = mapThinkingToAnthropic(thinking);
+  if (vendor === "anthropic" && anthropic) {
+    cfg.anthropic = anthropic;
+  }
+
   const google = mapThinkingToGoogle(model, thinking);
   if (vendor === "google" && google) {
     cfg.google = google;
@@ -278,9 +312,34 @@ export async function GenAI(modelSpec: string): Promise<ChatInstance> {
     resolved.thinking
   );
 
+  if (resolved.vendor === "openai" || resolved.vendor === "openrouter") {
+    const apiKey = await getToken(resolved.vendor);
+    const baseURL =
+      resolved.vendor === "openai"
+        ? "https://api.openai.com/v1"
+        : "https://openrouter.ai/api/v1";
+    return new OpenAIChat(
+      apiKey,
+      baseURL,
+      resolved.model,
+      resolved.vendor,
+      vendorConfig
+    );
+  }
+
+  if (resolved.vendor === "anthropic") {
+    const apiKey = await getToken(resolved.vendor);
+    return new AnthropicChat(apiKey, resolved.model, vendorConfig);
+  }
+
   if (resolved.vendor === "google") {
     const apiKey = await getToken(resolved.vendor);
     return new GoogleChat(apiKey, resolved.model, vendorConfig);
+  }
+
+  if (resolved.vendor === "xai") {
+    const apiKey = await getToken(resolved.vendor);
+    return new XAIChat(apiKey, resolved.model, vendorConfig);
   }
 
   throw new Error(`Unsupported vendor: ${resolved.vendor}`);
