@@ -1,6 +1,8 @@
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import { AnthropicChat } from "./vendors/anthropic";
 import { GoogleChat } from "./vendors/google";
 import { OpenAIChat } from "./vendors/openai";
@@ -116,7 +118,9 @@ function inferVendor(model: string): Vendor {
 }
 
 async function getToken(vendor: string): Promise<string> {
-  const tokenPath = path.join(os.homedir(), ".config", `${vendor}.token`);
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const tokenPath = path.join(__dirname, "vendors", `${vendor}.token`);
   try {
     return (await fs.readFile(tokenPath, "utf8")).trim();
   } catch (err) {

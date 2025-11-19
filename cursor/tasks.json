@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "AI Refactor [Anthropic]",
+      "type": "shell",
+
+      // Call via Bun
+      "command": "bun",
+      // i-, i, i+, I == gemini 3.0 pro
+      // s-, s, s+, S == anthropic sonnet 4.5
+      "args": ["~/.config/dotfiles/ai/refactor.ts", "${relativeFile}", "s-"],
+
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always", // or "silent" if you don't want the terminal popping up
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "AI Refactor [Gemini 3.0]",
+      "type": "shell",
+
+      // Call via Bun
+      "command": "bun",
+      // i-, i, i+, I == gemini 3.0 pro
+      // s-, s, s+, S == anthropic sonnet 4.5
+      "args": ["~/.config/dotfiles/ai/refactor.ts", "${relativeFile}", "i-"],
+
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always", // or "silent" if you don't want the terminal popping up
+        "panel": "dedicated"
+      }
+    }
+  ]
+}
