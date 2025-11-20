@@ -132,7 +132,14 @@ sketchybar --add item clock right \
            update_freq=900 \
            icon.color="$GRAY_LIGHT" \
            label.color="$WHITE" \
-           script="$PLUGIN_DIR/weather.sh"
+           script="$PLUGIN_DIR/weather.sh" \
+           \
+           --add item prayer right \
+           --set prayer \
+           update_freq=300 \
+           icon.color="$GRAY_LIGHT" \
+           label.color="$WHITE" \
+           script="$PLUGIN_DIR/prayer.sh"
 
 ##### Force all scripts to run the first time (never do this in a script) #####
 sketchybar --update

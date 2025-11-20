@@ -2,6 +2,10 @@
 
 [Original post](https://x.com/VictorTaelin/status/1991145825318130054)
 
+# REVIEW 11/18/2025
+
+After using this for some time, I still think the Cursor/Claude Code experience is better. This format, though handy, and quick, often gets the code blocks mis-shaped, curly braces are wrong, it doesn't too changes across disparate repos in the file very well.
+
 ## Overview
 
 This is an AI-powered code refactoring tool that reads a file containing code and instructions, then uses an AI model to generate and apply edits to your codebase.

@@ -136,7 +136,7 @@ For example, given the file:
 
 !1
 function hello_10() {
-  
+
 !2
   for (var i = 0; i < 10; ++i) {
     console.log("hello " ++ i);
@@ -591,16 +591,39 @@ function normalizeFileReference(reference: string): string {
   return reference.replace(/^\.\//, "").trim();
 }
 
-async function askAI(model: string, prompt: string): Promise<string> {
+interface AIResponse {
+  text: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
+async function askAI(model: string, prompt: string): Promise<AIResponse> {
   const ai = await GenAI(model);
   const reply = await ai.ask(prompt, {});
+
+  let text: string;
+  let inputTokens: number | undefined;
+  let outputTokens: number | undefined;
+
   if (typeof reply === "string") {
-    return reply;
+    text = reply;
+  } else if (Array.isArray((reply as any).messages)) {
+    text = (reply as any).messages.map((m: any) => m.content).join("\n");
+  } else {
+    text = String(reply);
   }
-  if (Array.isArray((reply as any).messages)) {
-    return (reply as any).messages.map((m: any) => m.content).join("\n");
+
+  // Extract token usage if available
+  if (typeof reply === "object" && reply !== null) {
+    const replyObj = reply as any;
+    if (replyObj.usage) {
+      inputTokens = replyObj.usage.input_tokens ?? replyObj.usage.inputTokens;
+      outputTokens =
+        replyObj.usage.output_tokens ?? replyObj.usage.outputTokens;
+    }
   }
-  return String(reply);
+
+  return { text, inputTokens, outputTokens };
 }
 
 function addOmitValue(token: string, collector: Set<number>): void {
@@ -1025,7 +1048,17 @@ async function main(): Promise<void> {
       contextBlock,
       prompt
     );
-    compactResponse = await askAI(compactorSpec, compactPrompt);
+    const compactResult = await askAI(compactorSpec, compactPrompt);
+    compactResponse = compactResult.text;
+
+    if (
+      compactResult.inputTokens !== undefined &&
+      compactResult.outputTokens !== undefined
+    ) {
+      console.log(
+        `compactor tokens: ${compactResult.inputTokens} in, ${compactResult.outputTokens} out`
+      );
+    }
 
     omitBlocks = parseOmitCommands(compactResponse);
     contextBlock = formatBlocks(blockState, omitBlocks);
@@ -1066,7 +1099,18 @@ async function main(): Promise<void> {
   await writeSessionLog(logContext, "mini-prompt.txt", editingPrompt);
   console.log("\n**Calling coding model...**\n");
   const editorSpec = buildModelSpec(resolvedModel, resolvedModel.thinking);
-  const editingResponse = await askAI(editorSpec, editingPrompt);
+  const editingResult = await askAI(editorSpec, editingPrompt);
+  const editingResponse = editingResult.text;
+
+  if (
+    editingResult.inputTokens !== undefined &&
+    editingResult.outputTokens !== undefined
+  ) {
+    console.log(
+      `editor tokens: ${editingResult.inputTokens} in, ${editingResult.outputTokens} out`
+    );
+  }
+
   const responseLog = [
     "=== COMPACTOR PROMPT ===",
     compactPrompt,
@@ -1086,6 +1130,17 @@ async function main(): Promise<void> {
   }
 
   await applyCommands(commands, workspaceRoot, gitAvailable, blockState);
+
+  if (
+    editingResult.inputTokens !== undefined &&
+    editingResult.outputTokens !== undefined
+  ) {
+    console.log(
+      `\nEditing complete. Tokens used: ${editingResult.inputTokens} input, ${editingResult.outputTokens} output.`
+    );
+  } else {
+    console.log("\nEditing complete.");
+  }
 }
 
 main().catch((err) => {
