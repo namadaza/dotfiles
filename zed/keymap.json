@@ -21,6 +21,8 @@
         "action::Sequence",
         ["pane::TogglePinTab", "pane::UnpinAllTabs"],
       ],
+      "space j": "pane::SwapItemLeft",
+      "space l": "pane::SwapItemRight",
       "space 1": ["pane::ActivateItem", 0],
       "space 2": ["pane::ActivateItem", 1],
       "space 3": ["pane::ActivateItem", 2],
@@ -43,7 +45,7 @@
   {
     "context": "Pane",
     "bindings": {
-      "ctrl-shift-tab": "pane::ActivatePrevItem",
+      "ctrl-shift-tab": "pane::ActivatePreviousItem",
       "ctrl-tab": "pane::ActivateNextItem",
     },
   },
