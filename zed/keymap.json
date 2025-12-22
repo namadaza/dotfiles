@@ -21,7 +21,7 @@
         "action::Sequence",
         ["pane::TogglePinTab", "pane::UnpinAllTabs"],
       ],
-      "space j": "pane::SwapItemLeft",
+      "space h": "pane::SwapItemLeft",
       "space l": "pane::SwapItemRight",
       "space 1": ["pane::ActivateItem", 0],
       "space 2": ["pane::ActivateItem", 1],
