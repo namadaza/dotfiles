@@ -17,10 +17,7 @@
     "context": "Editor && (vim_mode == normal || vim_mode == visual) && !VimWaiting && !menu",
     "bindings": {
       "space e": "editor::ToggleTabBar",
-      "space a": [
-        "action::Sequence",
-        ["pane::TogglePinTab", "pane::UnpinAllTabs"],
-      ],
+      "space a": ["action::Sequence", ["pane::TogglePinTab"]],
       "space h": "pane::SwapItemLeft",
       "space l": "pane::SwapItemRight",
       "space 1": ["pane::ActivateItem", 0],
