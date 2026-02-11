@@ -1,0 +1,127 @@
+#!/bin/bash
+
+set -euo pipefail
+
+usage() {
+    echo "Usage:"
+    echo "  wt <branch>        Create worktree + tmux session"
+    echo "  wt --pr <number>   Create worktree from PR branch"
+    echo "  wt remove          Tear down current worktree + session"
+    echo "  wt list            List active worktree sessions"
+    echo "  wt --help          Show this help message"
+    exit "${1:-1}"
+}
+
+require_git_repo() {
+    if ! git rev-parse --show-toplevel &>/dev/null; then
+        echo "Error: not inside a git repository" >&2
+        exit 1
+    fi
+}
+
+setup_tmux_session() {
+    local branch="$1"
+    local worktree_path="$2"
+
+    tmux new-session -d -s "$branch" -c "$worktree_path"
+    tmux new-window -t "$branch" -c "$worktree_path"
+    tmux new-window -t "$branch" -c "$worktree_path"
+    tmux select-window -t "$branch:1"
+
+    if [ -n "${TMUX:-}" ]; then
+        tmux switch-client -t "$branch"
+    else
+        tmux attach -t "$branch"
+    fi
+}
+
+cmd_create() {
+    local branch="$1"
+
+    require_git_repo
+    local project_root
+    project_root="$(git rev-parse --show-toplevel)"
+    local project_name
+    project_name="$(basename "$project_root")"
+    local worktree_path="$project_root/../${project_name}__worktrees/$branch"
+
+    git worktree add -b "$branch" "$worktree_path"
+    setup_tmux_session "$branch" "$worktree_path"
+}
+
+cmd_pr() {
+    local pr_number="$1"
+
+    require_git_repo
+    local project_root
+    project_root="$(git rev-parse --show-toplevel)"
+    local project_name
+    project_name="$(basename "$project_root")"
+
+    local branch
+    branch="$(gh pr view "$pr_number" --json headRefName -q .headRefName)"
+
+    git fetch origin "$branch"
+
+    local worktree_path="$project_root/../${project_name}__worktrees/$branch"
+    git worktree add --track -b "$branch" "$worktree_path" "origin/$branch"
+    setup_tmux_session "$branch" "$worktree_path"
+}
+
+cmd_remove() {
+    require_git_repo
+    local worktree_path
+    worktree_path="$(git rev-parse --show-toplevel)"
+
+    if [[ "$worktree_path" != *__worktrees/* ]]; then
+        echo "Error: not inside a worktree (__worktrees/ directory). Refusing to remove." >&2
+        exit 1
+    fi
+
+    local session
+    session="$(tmux display-message -p '#S')"
+
+    tmux kill-session -t "$session"
+    # Structure: <parent>/<project>__worktrees/<branch>
+    local worktrees_dir
+    worktrees_dir="$(dirname "$worktree_path")"
+    local project_name
+    project_name="$(basename "$worktrees_dir" | sed 's/__worktrees$//')"
+    local parent_dir
+    parent_dir="$(dirname "$worktrees_dir")"
+    git -C "$parent_dir/$project_name" worktree remove "$worktree_path"
+}
+
+cmd_list() {
+    require_git_repo
+    local project_root
+    project_root="$(git rev-parse --show-toplevel)"
+
+    echo "Worktrees:"
+    git -C "$project_root" worktree list
+}
+
+# --- main ---
+
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+case "$1" in
+    --pr)
+        [ $# -lt 2 ] && usage
+        cmd_pr "$2"
+        ;;
+    remove)
+        cmd_remove
+        ;;
+    list)
+        cmd_list
+        ;;
+    -h|--help|help)
+        usage 0
+        ;;
+    *)
+        cmd_create "$1"
+        ;;
+esac
