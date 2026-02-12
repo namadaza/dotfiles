@@ -4,11 +4,12 @@ set -euo pipefail
 
 usage() {
     echo "Usage:"
-    echo "  wt <branch>        Create worktree + tmux session"
-    echo "  wt --pr <number>   Create worktree from PR branch"
-    echo "  wt remove          Tear down current worktree + session"
-    echo "  wt list            List active worktree sessions"
-    echo "  wt --help          Show this help message"
+    echo "  wt add <branch>       Create worktree + tmux session"
+    echo "  wt add --pr <number>  Create worktree from a PR branch"
+    echo "  wt remove             Tear down current worktree + session"
+    echo "  wt list               List active worktree sessions"
+    echo "  wt prune              Remove prunable worktrees and their branches"
+    echo "  wt --help             Show this help message"
     exit "${1:-1}"
 }
 
@@ -35,36 +36,55 @@ setup_tmux_session() {
     fi
 }
 
-cmd_create() {
-    local branch="$1"
+cmd_add() {
+    local pr_number=""
+    local branch=""
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --pr)
+                [ $# -lt 2 ] && usage
+                pr_number="$2"
+                shift 2
+                ;;
+            *)
+                branch="$1"
+                shift
+                ;;
+        esac
+    done
+
+    if [ -z "$branch" ] && [ -z "$pr_number" ]; then
+        usage
+    fi
 
     require_git_repo
     local project_root
     project_root="$(git rev-parse --show-toplevel)"
-    local project_name
-    project_name="$(basename "$project_root")"
-    local worktree_path="$project_root/../${project_name}__worktrees/$branch"
 
-    git worktree add -b "$branch" "$worktree_path"
-    setup_tmux_session "$branch" "$worktree_path"
-}
+    if [[ "$project_root" == *__worktrees/* ]]; then
+        echo "Error: already inside a worktree. Cannot nest worktrees." >&2
+        exit 1
+    fi
 
-cmd_pr() {
-    local pr_number="$1"
-
-    require_git_repo
-    local project_root
-    project_root="$(git rev-parse --show-toplevel)"
     local project_name
     project_name="$(basename "$project_root")"
 
-    local branch
-    branch="$(gh pr view "$pr_number" --json headRefName -q .headRefName)"
+    if [ -n "$pr_number" ]; then
+        branch="$(gh pr view "$pr_number" --json headRefName -q .headRefName)"
+        git fetch origin "$branch"
+        local worktree_path="$project_root/../${project_name}__worktrees/$branch"
+        if git show-ref --verify --quiet "refs/heads/$branch"; then
+            git branch -f "$branch" "origin/$branch"
+            git worktree add "$worktree_path" "$branch"
+        else
+            git worktree add --track -b "$branch" "$worktree_path" "origin/$branch"
+        fi
+    else
+        local worktree_path="$project_root/../${project_name}__worktrees/$branch"
+        git worktree add -b "$branch" "$worktree_path"
+    fi
 
-    git fetch origin "$branch"
-
-    local worktree_path="$project_root/../${project_name}__worktrees/$branch"
-    git worktree add --track -b "$branch" "$worktree_path" "origin/$branch"
     setup_tmux_session "$branch" "$worktree_path"
 }
 
@@ -101,6 +121,31 @@ cmd_list() {
     git -C "$project_root" worktree list
 }
 
+cmd_prune() {
+    require_git_repo
+    local project_root
+    project_root="$(git rev-parse --show-toplevel)"
+
+    local prunable
+    prunable="$(git -C "$project_root" worktree list --porcelain | awk '/^worktree /{wt=$2} /^prunable/{print wt}')"
+
+    if [ -z "$prunable" ]; then
+        echo "No prunable worktrees found."
+        return
+    fi
+
+    echo "Pruning worktrees:"
+    while IFS= read -r wt_path; do
+        local branch
+        branch="$(basename "$wt_path")"
+        echo "  removing: $wt_path (branch: $branch)"
+        git -C "$project_root" worktree remove --force "$wt_path"
+        git -C "$project_root" branch -D "$branch" 2>/dev/null || true
+    done <<< "$prunable"
+
+    echo "Done."
+}
+
 # --- main ---
 
 if [ $# -eq 0 ]; then
@@ -108,9 +153,9 @@ if [ $# -eq 0 ]; then
 fi
 
 case "$1" in
-    --pr)
-        [ $# -lt 2 ] && usage
-        cmd_pr "$2"
+    add)
+        shift
+        cmd_add "$@"
         ;;
     remove)
         cmd_remove
@@ -118,10 +163,13 @@ case "$1" in
     list)
         cmd_list
         ;;
+    prune)
+        cmd_prune
+        ;;
     -h|--help|help)
         usage 0
         ;;
     *)
-        cmd_create "$1"
+        usage
         ;;
 esac
