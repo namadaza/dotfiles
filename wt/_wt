@@ -1,0 +1,56 @@
+#compdef wt
+
+_wt_worktree_branches() {
+    local project_root
+    project_root="$(git rev-parse --show-toplevel 2>/dev/null)" || return
+
+    if [[ "$project_root" == *__worktrees/* ]]; then
+        local worktrees_dir="$(dirname "$project_root")"
+        local project_name="$(basename "$worktrees_dir" | sed 's/__worktrees$//')"
+        local parent_dir="$(dirname "$worktrees_dir")"
+        project_root="$parent_dir/$project_name"
+    fi
+
+    local project_name="$(basename "$project_root")"
+    local branches=()
+
+    while IFS= read -r b; do
+        [ -n "$b" ] && branches+=("$b")
+    done < <(
+        git -C "$project_root" worktree list --porcelain 2>/dev/null \
+            | awk '/^worktree /{wt=$2} /^branch refs\/heads\//{print substr($2,12)}' \
+            | while IFS= read -r b; do
+                local wt_path="$(dirname "$project_root")/${project_name}__worktrees/$b"
+                [ -d "$wt_path" ] && echo "$b"
+            done
+    )
+
+    compadd -a branches
+}
+
+_wt() {
+    local -a commands=(
+        'add:Create worktree + tmux session'
+        'attach:Attach tmux session to existing worktree'
+        'remove:Tear down worktree, session, and branch'
+        'list:List active worktree sessions'
+        'clean:Remove worktrees whose remote branch is gone'
+        'prune:Remove prunable worktrees and their branches'
+        'help:Show help message'
+    )
+
+    if (( CURRENT == 2 )); then
+        _describe 'command' commands
+    elif (( CURRENT == 3 )); then
+        case "${words[2]}" in
+            attach|remove)
+                _wt_worktree_branches
+                ;;
+            add)
+                _message 'branch name'
+                ;;
+        esac
+    fi
+}
+
+_wt "$@"

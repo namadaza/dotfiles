@@ -6,8 +6,10 @@ usage() {
     echo "Usage:"
     echo "  wt add <branch>       Create worktree + tmux session"
     echo "  wt add --pr <number>  Create worktree from a PR branch"
-    echo "  wt remove             Tear down current worktree + session"
+    echo "  wt attach [<branch>]  Attach tmux session to existing worktree"
+    echo "  wt remove [<branch>] Tear down worktree, session, and branch"
     echo "  wt list               List active worktree sessions"
+    echo "  wt clean              Remove worktrees whose remote branch is gone"
     echo "  wt prune              Remove prunable worktrees and their branches"
     echo "  wt --help             Show this help message"
     exit "${1:-1}"
@@ -73,7 +75,7 @@ cmd_add() {
     if [ -n "$pr_number" ]; then
         branch="$(gh pr view "$pr_number" --json headRefName -q .headRefName)"
         git fetch origin "$branch"
-        local worktree_path="$project_root/../${project_name}__worktrees/$branch"
+        local worktree_path="$(dirname "$project_root")/${project_name}__worktrees/$branch"
         if git show-ref --verify --quiet "refs/heads/$branch"; then
             git branch -f "$branch" "origin/$branch"
             git worktree add "$worktree_path" "$branch"
@@ -81,8 +83,91 @@ cmd_add() {
             git worktree add --track -b "$branch" "$worktree_path" "origin/$branch"
         fi
     else
-        local worktree_path="$project_root/../${project_name}__worktrees/$branch"
+        local worktree_path="$(dirname "$project_root")/${project_name}__worktrees/$branch"
         git worktree add -b "$branch" "$worktree_path"
+    fi
+
+    setup_tmux_session "$branch" "$worktree_path"
+}
+
+list_worktree_branches() {
+    local project_root="$1"
+    git -C "$project_root" worktree list --porcelain \
+        | awk '/^worktree /{wt=$2} /^branch refs\/heads\//{print substr($2,12)}' \
+        | while IFS= read -r b; do
+            # Exclude the main worktree (the repo itself, not under __worktrees/)
+            local project_name
+            project_name="$(basename "$project_root")"
+            local wt_path="$(dirname "$project_root")/${project_name}__worktrees/$b"
+            [ -d "$wt_path" ] && echo "$b"
+        done
+}
+
+cmd_attach() {
+    require_git_repo
+    local project_root
+    project_root="$(git rev-parse --show-toplevel)"
+
+    if [[ "$project_root" == *__worktrees/* ]]; then
+        # If inside a worktree, resolve to the main repo
+        local worktrees_dir
+        worktrees_dir="$(dirname "$project_root")"
+        local project_name
+        project_name="$(basename "$worktrees_dir" | sed 's/__worktrees$//')"
+        local parent_dir
+        parent_dir="$(dirname "$worktrees_dir")"
+        project_root="$parent_dir/$project_name"
+    fi
+
+    local project_name
+    project_name="$(basename "$project_root")"
+    local branch="${1:-}"
+
+    local branches
+    branches="$(list_worktree_branches "$project_root")"
+
+    if [ -z "$branches" ]; then
+        echo "No worktrees found. Use 'wt add <branch>' to create one." >&2
+        exit 1
+    fi
+
+    if [ -z "$branch" ]; then
+        # No argument: use fzf to pick
+        if ! command -v fzf &>/dev/null; then
+            echo "No branch specified and fzf not found. Usage: wt attach <branch>" >&2
+            exit 1
+        fi
+        branch="$(echo "$branches" | fzf --prompt="Select worktree: " --height=~50%)" || exit 0
+    else
+        # Check for exact match first
+        if ! echo "$branches" | grep -qx "$branch"; then
+            # Try fzf with the input as initial query
+            if command -v fzf &>/dev/null; then
+                branch="$(echo "$branches" | fzf --prompt="Select worktree: " --height=~50% --query="$branch" --select-1 --exit-0)" || exit 0
+            else
+                echo "Error: no worktree found for branch '$branch'" >&2
+                echo "Available worktrees:"
+                echo "$branches" | sed 's/^/  /'
+                exit 1
+            fi
+        fi
+    fi
+
+    local worktree_path="$(dirname "$project_root")/${project_name}__worktrees/$branch"
+
+    if [ ! -d "$worktree_path" ]; then
+        echo "Error: worktree directory not found: $worktree_path" >&2
+        exit 1
+    fi
+
+    # If tmux session already exists, just switch to it
+    if tmux has-session -t "$branch" 2>/dev/null; then
+        if [ -n "${TMUX:-}" ]; then
+            tmux switch-client -t "$branch"
+        else
+            tmux attach -t "$branch"
+        fi
+        return
     fi
 
     setup_tmux_session "$branch" "$worktree_path"
@@ -90,26 +175,51 @@ cmd_add() {
 
 cmd_remove() {
     require_git_repo
-    local worktree_path
-    worktree_path="$(git rev-parse --show-toplevel)"
+    local project_root
+    project_root="$(git rev-parse --show-toplevel)"
+    local branch="${1:-}"
 
-    if [[ "$worktree_path" != *__worktrees/* ]]; then
-        echo "Error: not inside a worktree (__worktrees/ directory). Refusing to remove." >&2
-        exit 1
+    # No arg: infer branch from current worktree
+    if [ -z "$branch" ]; then
+        if [[ "$project_root" != *__worktrees/* ]]; then
+            echo "Error: not inside a worktree. Usage: wt remove [<branch>]" >&2
+            exit 1
+        fi
+        branch="$(basename "$project_root")"
     fi
 
-    local session
-    session="$(tmux display-message -p '#S')"
+    if [[ "$project_root" == *__worktrees/* ]]; then
+        local wd
+        wd="$(dirname "$project_root")"
+        local pn
+        pn="$(basename "$wd" | sed 's/__worktrees$//')"
+        project_root="$(dirname "$wd")/$pn"
+    fi
 
-    tmux kill-session -t "$session"
-    # Structure: <parent>/<project>__worktrees/<branch>
-    local worktrees_dir
-    worktrees_dir="$(dirname "$worktree_path")"
-    local project_name
-    project_name="$(basename "$worktrees_dir" | sed 's/__worktrees$//')"
-    local parent_dir
-    parent_dir="$(dirname "$worktrees_dir")"
-    git -C "$parent_dir/$project_name" worktree remove "$worktree_path"
+    # Kill tmux session if it exists
+    if tmux has-session -t "$branch" 2>/dev/null; then
+        local current_session
+        current_session="$(tmux display-message -p '#S' 2>/dev/null || true)"
+        if [ "$current_session" = "$branch" ]; then
+            # We're inside the session we want to kill — switch away first
+            trap '' HUP
+            local other_session
+            other_session="$(tmux list-sessions -F '#S' | grep -v "^${branch}$" | head -1 || true)"
+            if [ -n "$other_session" ]; then
+                tmux switch-client -t "$other_session"
+            else
+                tmux new-session -d -s "main" -c "$project_root"
+                tmux switch-client -t "main"
+            fi
+        fi
+        tmux kill-session -t "$branch"
+    fi
+
+    # Remove worktree and branch
+    git -C "$project_root" worktree remove --force "$branch" 2>/dev/null || true
+    git -C "$project_root" branch -D "$branch" 2>/dev/null || true
+
+    echo "Removed worktree and branch: $branch"
 }
 
 cmd_list() {
@@ -117,8 +227,80 @@ cmd_list() {
     local project_root
     project_root="$(git rev-parse --show-toplevel)"
 
+    local branches
+    branches="$(list_worktree_branches "$project_root")"
+
+    if [ -z "$branches" ]; then
+        echo "No worktrees found."
+        return
+    fi
+
     echo "Worktrees:"
-    git -C "$project_root" worktree list
+    while IFS= read -r branch; do
+        local status=""
+        if ! git -C "$project_root" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+            status=" [gone]"
+        fi
+        printf "  %s%s\n" "$branch" "$status"
+    done <<< "$branches"
+}
+
+cmd_clean() {
+    require_git_repo
+    local project_root
+    project_root="$(git rev-parse --show-toplevel)"
+
+    if [[ "$project_root" == *__worktrees/* ]]; then
+        local wd
+        wd="$(dirname "$project_root")"
+        local pn
+        pn="$(basename "$wd" | sed 's/__worktrees$//')"
+        project_root="$(dirname "$wd")/$pn"
+    fi
+
+    echo "Fetching and pruning remote refs..."
+    git -C "$project_root" fetch --prune origin
+
+    local branches
+    branches="$(list_worktree_branches "$project_root")"
+
+    if [ -z "$branches" ]; then
+        echo "Nothing to clean."
+        return
+    fi
+
+    local found=0
+    while IFS= read -r branch; do
+        if ! git -C "$project_root" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+            found=1
+            echo "Removing: $branch"
+
+            # Kill tmux session if it exists
+            if tmux has-session -t "$branch" 2>/dev/null; then
+                local current_session
+                current_session="$(tmux display-message -p '#S' 2>/dev/null || true)"
+                if [ "$current_session" = "$branch" ]; then
+                    trap '' HUP
+                    local other_session
+                    other_session="$(tmux list-sessions -F '#S' | grep -v "^${branch}$" | head -1 || true)"
+                    if [ -n "$other_session" ]; then
+                        tmux switch-client -t "$other_session"
+                    else
+                        tmux new-session -d -s "main" -c "$project_root"
+                        tmux switch-client -t "main"
+                    fi
+                fi
+                tmux kill-session -t "$branch"
+            fi
+
+            git -C "$project_root" worktree remove --force "$branch" 2>/dev/null || true
+            git -C "$project_root" branch -D "$branch" 2>/dev/null || true
+        fi
+    done <<< "$branches"
+
+    if [ "$found" -eq 0 ]; then
+        echo "Nothing to clean."
+    fi
 }
 
 cmd_prune() {
@@ -157,11 +339,19 @@ case "$1" in
         shift
         cmd_add "$@"
         ;;
+    attach)
+        shift
+        cmd_attach "$@"
+        ;;
     remove)
-        cmd_remove
+        shift
+        cmd_remove "$@"
         ;;
     list)
         cmd_list
+        ;;
+    clean)
+        cmd_clean
         ;;
     prune)
         cmd_prune
