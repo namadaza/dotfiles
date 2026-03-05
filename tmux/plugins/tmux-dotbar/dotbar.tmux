@@ -22,6 +22,7 @@ if [ "$mode" = "light" ]; then
   bg=$(get_tmux_option "@tmux-dotbar-bg" '#F5F5F5')
   fg=$(get_tmux_option "@tmux-dotbar-fg" '#666666')
   fg_current=$(get_tmux_option "@tmux-dotbar-fg-current" '#333333')
+  bg_current=$(get_tmux_option "@tmux-dotbar-bg-current" '#DCDCDC')
   fg_session=$(get_tmux_option "@tmux-dotbar-fg-session" '#777777')
   fg_prefix=$(get_tmux_option "@tmux-dotbar-fg-prefix" '#00A67E')
   maximized_icon_color='#0066CC'
@@ -29,6 +30,7 @@ else
   bg=$(get_tmux_option "@tmux-dotbar-bg" '#0B0E14')
   fg=$(get_tmux_option "@tmux-dotbar-fg" '#475266')
   fg_current=$(get_tmux_option "@tmux-dotbar-fg-current" '#BFBDB6')
+  bg_current=$(get_tmux_option "@tmux-dotbar-bg-current" '#1C2130')
   fg_session=$(get_tmux_option "@tmux-dotbar-fg-session" '#565B66')
   fg_prefix=$(get_tmux_option "@tmux-dotbar-fg-prefix" '#95E6CB')
   maximized_icon_color='#39BAE6'
@@ -84,7 +86,7 @@ tmux set-option -g window-status-bell-style "bg=${fg_prefix},fg=${bg},bold"
 tmux set-option -g window-status-activity-style "bg=${fg_current},fg=${bg}"
 
 if [ "$bold_current_window" = true ]; then
-  tmux set-option -g window-status-current-format "#[bg=${bg},fg=${fg_current},bold]${window_status_format}#[fg=${maximized_icon_color},bg=${bg}]#{?window_zoomed_flag,${maximized_pane_icon},}#[fg=${bg},bg=default]"
+  tmux set-option -g window-status-current-format "#[bg=${bg_current},fg=${fg_current},bold]${window_status_format}#[fg=${maximized_icon_color},bg=${bg_current}]#{?window_zoomed_flag,${maximized_pane_icon},}#[fg=${bg},bg=default]"
 else
-  tmux set-option -g window-status-current-format "#[bg=${bg},fg=${fg_current}]${window_status_format}#[fg=${maximized_icon_color},bg=${bg}]#{?window_zoomed_flag,${maximized_pane_icon},}#[fg=${bg},bg=default]"
+  tmux set-option -g window-status-current-format "#[bg=${bg_current},fg=${fg_current}]${window_status_format}#[fg=${maximized_icon_color},bg=${bg_current}]#{?window_zoomed_flag,${maximized_pane_icon},}#[fg=${bg},bg=default]"
 fi
