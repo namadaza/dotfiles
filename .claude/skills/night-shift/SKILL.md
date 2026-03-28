@@ -1,13 +1,21 @@
 ---
 name: night-shift
-description: Agentic development loop (plan, test, code) to work on tasks under docs/todo-...md.
+description: Agentic development loop (plan, test, code) to work on tasks from file specs or Linear issues.
 ---
 
 # Night Shift
 
-Autonomous development loop for implementing features and fixes from spec files. Designed to run unattended against one or more specs.
+Autonomous development loop for implementing features and fixes from spec files or Linear issues. Designed to run unattended against one or more specs.
+
+## Mode Selection
+
+**Linear mode** is activated by passing ticket IDs as arguments: `/night-shift GTM-233 GTM-539 GTM-555`. The tickets are worked in the order given.
+
+**File mode** is the default when no ticket IDs are provided: `/night-shift`. Uses local spec files from `.claude/specs/`.
 
 ## Picking Up Work
+
+### File Mode (default — no arguments)
 
 Look in `.claude/specs/` for specs prefixed with `todo-`. A spec can be either:
 
@@ -16,9 +24,18 @@ Look in `.claude/specs/` for specs prefixed with `todo-`. A spec can be either:
 
 Pick one spec at a time. When a spec is complete, rename it to drop the `todo-` prefix (e.g., `todo-2026-03-14-feature.md` → `2026-03-14-feature.md`, or `todo-2026-03-14-feature/` → `2026-03-14-feature/`). Then check for the next `todo-` spec and repeat.
 
-The `.claude/` directory is gitignored, so specs persist across branch switches and don't need to be committed to any branch.
+The `.claude/` directory is gitignored, so specs persist across branch switches and don't need to be committed to any branch. (This concern does not apply to Linear mode.)
 
 If no `todo-` specs remain, stop.
+
+### Linear Mode (ticket IDs as arguments)
+
+Work through the ticket IDs in the order they were provided. For each ticket:
+
+1. Fetch the full spec: `bun ~/.claude/skills/linear-spec/linear.ts get <issue-id>`. The issue description is the spec content.
+2. Transition to In Progress: `bun ~/.claude/skills/linear-spec/linear.ts transition <issue-id> started`.
+
+When all provided tickets have been completed, stop.
 
 ## Branching Strategy
 
@@ -34,7 +51,7 @@ For each spec:
 
 - **Never push directly to the git repo's main branch.** All work happens on feature branches. Push to the feature branch only.
 - **Scope guard.** Only change what the spec requires. Do not refactor unrelated code, add unrelated features, or "improve" things outside the spec's scope. If you notice something unrelated that needs attention, note it in the spec file being worked on — don't fix it.
-- **Abort after 3 failed review cycles.** If the review personas raise blocking concerns 3 times and the plan/implementation still can't pass, stop. Document the blocker in blocked spec file and move on to the next spec (or stop if none remain).
+- **Abort after 3 failed review cycles.** If the review personas raise blocking concerns 3 times and the plan/implementation still can't pass, stop. In file mode, document the blocker in the spec file. In Linear mode, add a comment documenting the blocker (`bun ~/.claude/skills/linear-spec/linear.ts comment <issue-id> "<blocker details>"`) and leave the ticket in `started` (In Progress). Then move on to the next spec (or stop if none remain).
 - **Restart services if they go down.** If a dev server or worker becomes unresponsive, restart it before continuing.
 
 ## Discovering Commands
@@ -51,9 +68,11 @@ Do not assume which commands are available. Instead, discover them:
 ### 1. Prep
 
 - Run `git status`. If the repo has uncommitted changes, review them, run tests, fix issues, and commit before starting.
-- Check `.claude/specs/` for the next `todo-` prefixed spec file.
+- **File mode:** Check `.claude/specs/` for the next `todo-` prefixed spec file.
+- **Linear mode:** Take the next ticket ID from the provided list. Fetch the full spec with `bun ~/.claude/skills/linear-spec/linear.ts get <issue-id>`. Transition to in progress: `bun ~/.claude/skills/linear-spec/linear.ts transition <issue-id> started`.
 - Create a feature branch per the branching strategy above. Branch name should be descriptive but concise (e.g., `amanazad/lead-scoring-fix`, `amanazad/add-export-endpoint`).
-- Log the branch name in the spec file at the top.
+- **File mode:** Log the branch name in the spec file at the top.
+- **Linear mode:** Log the branch name as a comment: `bun ~/.claude/skills/linear-spec/linear.ts comment <issue-id> "Branch: amanazad/<name>"`.
 
 ### 2. Understand
 
@@ -124,9 +143,14 @@ See `testing.md` section 3 for details.
 - **Rebase off the base branch** before pushing: `git fetch origin && git rebase origin/main` (or `origin/dev`, whichever is the repo's default branch). If there are conflicts, resolve them, then continue the rebase. Re-run validation (step 8) after rebasing to make sure nothing broke.
 - Push the feature branch and create a **draft** PR with a summary statement (`gh pr create --draft`). Format for title should be `feat(app-name): short description`, or `fix(app-name): short description`
 - **Add screenshots for UI specs.** If the spec added or changed UI, capture screenshots and include them in the PR. See the "PR Screenshots" section below.
-- Add an entry in spec file summarizing: what was done, the branch name, and the PR URL. Prefix the entry with today's date, e.g., `## 3-16-2026 Updates`.
-- Rename the spec file to drop the `todo-` prefix (e.g., `.claude/specs/todo-2026-03-14-feature.md` → `.claude/specs/2026-03-14-feature.md`). Note the branch name at the top of the spec file.
-- Check `.claude/specs/` for the next `todo-` spec. If one exists, go back to step 1. If not, stop.
+- **File mode:**
+  - Add an entry in spec file summarizing: what was done, the branch name, and the PR URL. Prefix the entry with today's date, e.g., `## 3-16-2026 Updates`.
+  - Rename the spec file to drop the `todo-` prefix (e.g., `.claude/specs/todo-2026-03-14-feature.md` → `.claude/specs/2026-03-14-feature.md`). Note the branch name at the top of the spec file.
+  - Check `.claude/specs/` for the next `todo-` spec. If one exists, go back to step 1. If not, stop.
+- **Linear mode:**
+  - Add a comment summarizing what was done, the branch name, and the PR URL: `bun ~/.claude/skills/linear-spec/linear.ts comment <issue-id> "<summary, branch, PR URL>"`.
+  - Do **not** transition the ticket to Done — leave it in `started` (In Progress). The team moves it to Done after reviewing the PR.
+  - If there are more ticket IDs remaining in the provided list, go back to step 1. If all tickets have been completed, stop.
 
 ## PR Screenshots
 
