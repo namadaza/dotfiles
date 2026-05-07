@@ -7,7 +7,23 @@ Set this up to hold configurations for commonly used tools, as well as bash scri
 - aerospace -- window tiling
 - cursor -- code editor
 - ghostty -- terminal
+- hunk -- git diff viewer (`hunk diff --watch`, `hunk show`)
 - sketchybar -- menu bar replacement
+
+## Hunk Installation
+
+[Repo](https://github.com/modem-dev/hunk). Hunk reads from `~/.config/hunk/config.toml`. Run our setup script to copy this repo's config into place.
+
+```
+./scripts/hunk-update-config.sh
+```
+
+Common usage:
+
+```
+hunk diff --watch    # live diff viewer
+hunk show <ref>      # show a specific commit/ref
+```
 
 ## Sketchybar Installation
 
