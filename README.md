@@ -8,6 +8,7 @@ Set this up to hold configurations for commonly used tools, as well as bash scri
 - cursor -- code editor
 - ghostty -- terminal
 - hunk -- git diff viewer (`hunk diff --watch`, `hunk show`)
+- nvim -- minimal Neovim config built on mini.nvim
 - sketchybar -- menu bar replacement
 
 ## Hunk Installation
@@ -23,6 +24,32 @@ Common usage:
 ```
 hunk diff --watch    # live diff viewer
 hunk show <ref>      # show a specific commit/ref
+```
+
+## Neovim Installation
+
+Minimal config — a single `init.lua` built on [mini.nvim](https://github.com/nvim-mini/mini.nvim) plus [harpoon](https://github.com/ThePrimeagen/harpoon). No LSP, no Treesitter, no plugin manager. Plugins are cloned on first launch.
+
+Prereqs: `brew install neovim ripgrep` (ripgrep powers `<leader>fg` live grep).
+
+```
+./scripts/nvim-update-config.sh
+```
+
+Key mappings (leader is `<space>`):
+
+```
+<leader>ff       find files
+<leader>fg       live grep
+<leader>fb       buffers
+<leader>fh       help tags
+<leader>fr       resume last picker
+<leader>e        file explorer at current file
+<leader>a        harpoon: add current file
+<leader>x        harpoon: open menu (edit/reorder)
+<leader>1..4     harpoon: jump to slot
+gcc / gc         toggle comment (line / motion)
+sa / sd / sr     surround add / delete / replace
 ```
 
 ## Sketchybar Installation

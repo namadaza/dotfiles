@@ -16,7 +16,7 @@ TRANSPARENT_BLACK=0x80000000 # Transparent black (more transparent)
 
 ##### Bar Appearance #####
 sketchybar --bar position=top \
-                 height=32 \
+                 height=28 \
                  blur_radius=50 \
                  color=$TRANSPARENT_BLACK \
                  topmost=window
