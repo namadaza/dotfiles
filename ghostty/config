@@ -44,3 +44,7 @@
 theme = Xcode Light
 # theme = Xcode Dark
 keybind = shift+enter=text:\n
+
+# Auto-install Ghostty's terminfo on SSH remotes and forward TERM/COLORTERM
+# so tmux and other TUIs work without "missing or unsuitable terminal" errors.
+shell-integration-features = ssh-terminfo,ssh-env

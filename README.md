@@ -52,6 +52,20 @@ gcc / gc         toggle comment (line / motion)
 sa / sd / sr     surround add / delete / replace
 ```
 
+## Troubleshooting
+
+### `tmux`: missing or unsuitable terminal: xterm-ghostty (over SSH)
+
+When SSHing from Ghostty to a host that doesn't have Ghostty's terminfo installed, `tmux attach` (and other TUIs) fail with `missing or unsuitable terminal: xterm-ghostty`. The remote machine doesn't know the `xterm-ghostty` terminal type, so ncurses refuses to start.
+
+The Ghostty config in this repo enables `shell-integration-features = ssh-terminfo,ssh-env`, which auto-installs the terminfo on each `ssh` from Ghostty. If you're on a machine without that config applied yet, install it manually by piping the local terminfo into `tic` on the remote:
+
+```
+infocmp -x | ssh <user>@<host> -- /usr/bin/tic -x -
+```
+
+This writes `~/.terminfo/78/xterm-ghostty` on the remote — a one-time install that persists for future sessions.
+
 ## Sketchybar Installation
 
 Backup of [original](https://felixkratz.github.io/SketchyBar/setup).
