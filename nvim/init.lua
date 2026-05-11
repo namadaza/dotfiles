@@ -34,7 +34,19 @@ require('mini.basics').setup({
 require('mini.icons').setup()
 
 -- Picker. Needs ripgrep on PATH for grep_live.
-require('mini.pick').setup()
+require('mini.pick').setup({
+  mappings = {
+    -- <C-v> pastes the system clipboard into the prompt (mini.pick blocks terminal paste by default).
+    paste_clip = {
+      char = '<C-v>',
+      func = function()
+        local q = MiniPick.get_picker_query() or {}
+        for c in vim.fn.getreg('+'):gmatch('.') do table.insert(q, c) end
+        MiniPick.set_picker_query(q)
+      end,
+    },
+  },
+})
 vim.keymap.set('n', '<leader>ff', '<cmd>Pick files<cr>',     { desc = 'Find files' })
 vim.keymap.set('n', '<leader>fg', '<cmd>Pick grep_live<cr>', { desc = 'Live grep' })
 vim.keymap.set('n', '<leader>fb', '<cmd>Pick buffers<cr>',   { desc = 'Buffers' })
@@ -112,3 +124,6 @@ vim.o.scrolloff = 4
 
 -- Persist the signcolumn so text doesn't shift when diagnostics appear later.
 vim.o.signcolumn = 'yes'
+
+-- Sync yanks with the system clipboard (y/d/p use Cmd+C/V's buffer).
+vim.o.clipboard = 'unnamedplus'
