@@ -23,4 +23,7 @@
     "light": "One Light",
     "dark": "Gruvbox Dark Hard",
   },
+  "project_panel": {
+    "dock": "left",
+  },
 }

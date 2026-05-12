@@ -11,6 +11,7 @@
     "bindings": {
       // "space f f": "file_finder::Toggle", // use cmd+p native shortcut instead
       // "shift shift": "file_finder::Toggle"
+      "cmd-b": "workspace::ToggleLeftDock",
     },
   },
   {
