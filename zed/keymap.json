@@ -18,6 +18,7 @@
     "bindings": {
       "space e": "editor::ToggleTabBar",
       "space a": ["action::Sequence", ["pane::TogglePinTab"]],
+      "space x": "git::Diff",
       "space h": "pane::SwapItemLeft",
       "space l": "pane::SwapItemRight",
       "space 1": ["pane::ActivateItem", 0],
