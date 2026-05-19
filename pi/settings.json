@@ -1,0 +1,9 @@
+{
+  "agent": {
+    "name": "pi",
+    "description": "Pi coding agent settings (global). Project-level settings can override these.",
+    "preferences": {
+      "suggestCommit": false
+    }
+  }
+}
