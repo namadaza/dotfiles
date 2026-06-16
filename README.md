@@ -1,3 +1,13 @@
+# Update 6/16/2025
+
+## Opencode Usage
+
+`npx codeburn`
+
+## Opencode Auth Keys
+
+`cat ~/.local/share/opencode/auth.json`
+
 # vimconfig
 
 # Update 11/5/2025
