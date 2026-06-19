@@ -1,5 +1,7 @@
 plugin
 spell
+!nvim/spell/
+!nvim/spell/*.add
 ftplugin
 syntax
 coc-settings.json
