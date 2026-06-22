@@ -6,3 +6,11 @@
 --
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "markdown", "markdown_inline" },
+  callback = function(args)
+    -- Markdown typing is much faster without Treesitter in large notes.
+    pcall(vim.treesitter.stop, args.buf)
+  end,
+})
