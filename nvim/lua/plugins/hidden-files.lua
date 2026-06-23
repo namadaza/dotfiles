@@ -1,6 +1,9 @@
 return {
   {
     "folke/snacks.nvim",
+    keys = {
+      { "<leader>e", "<leader>fE", desc = "Explorer Snacks (cwd)", remap = true },
+    },
     opts = {
       picker = {
         sources = {
