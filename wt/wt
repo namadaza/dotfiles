@@ -38,6 +38,19 @@ setup_tmux_session() {
     fi
 }
 
+copy_env_local_files() {
+    local source_root="$1"
+    local target_root="$2"
+    local src rel dst
+
+    while IFS= read -r -d '' src; do
+        rel="${src#"$source_root"/}"
+        dst="$target_root/$rel"
+        mkdir -p "$(dirname "$dst")"
+        cp -p "$src" "$dst"
+    done < <(find "$source_root" -type f -name '.env.local' -print0)
+}
+
 cmd_add() {
     local pr_number=""
     local branch=""
@@ -71,11 +84,12 @@ cmd_add() {
 
     local project_name
     project_name="$(basename "$project_root")"
+    local worktree_path
 
     if [ -n "$pr_number" ]; then
         branch="$(gh pr view "$pr_number" --json headRefName -q .headRefName)"
         git fetch origin "$branch"
-        local worktree_path="$(dirname "$project_root")/${project_name}__worktrees/$branch"
+        worktree_path="$(dirname "$project_root")/${project_name}__worktrees/$branch"
         if git show-ref --verify --quiet "refs/heads/$branch"; then
             git branch -f "$branch" "origin/$branch"
             git worktree add "$worktree_path" "$branch"
@@ -83,10 +97,11 @@ cmd_add() {
             git worktree add --track -b "$branch" "$worktree_path" "origin/$branch"
         fi
     else
-        local worktree_path="$(dirname "$project_root")/${project_name}__worktrees/$branch"
+        worktree_path="$(dirname "$project_root")/${project_name}__worktrees/$branch"
         git worktree add -b "$branch" "$worktree_path"
     fi
 
+    copy_env_local_files "$project_root" "$worktree_path"
     setup_tmux_session "$branch" "$worktree_path"
 }
 
