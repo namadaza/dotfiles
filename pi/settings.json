@@ -1,4 +1,6 @@
 {
   "tuiMode": "fullscreen",
-  "suggestCommit": false
+  "suggestCommit": false,
+  "defaultProvider": "vercel-ai-gateway",
+  "defaultModel": "zai/glm-5.2"
 }
