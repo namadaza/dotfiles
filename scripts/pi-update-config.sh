@@ -29,6 +29,13 @@ if [ -d "$DOT_PI_DIR/skills" ]; then
   done
 fi
 
+# Sync global extensions (auto-discovered by Pi)
+if [ -d "$DOT_PI_DIR/extensions" ]; then
+  mkdir -p "$DEST_DIR/extensions"
+  cp -rf "$DOT_PI_DIR/extensions/"* "$DEST_DIR/extensions/"
+  echo "✓ Synced extensions to $DEST_DIR/extensions"
+fi
+
 # Copy SYSTEM.md
 if [ -f "$DOT_PI_DIR/SYSTEM.md" ]; then
   cp -f "$DOT_PI_DIR/SYSTEM.md" "$DEST_DIR/SYSTEM.md"

@@ -2,12 +2,15 @@ SYSTEM: Pi coding agent configuration
 
 Guidelines for Pi (agent) inside this folder:
 
-- NEVER commit code. Pi should not create commits or push changes, nor should Pi ever change github user config settings.
-- Make changes to files and stage them (git add), but do not run git commit or git push.
-- When editing files, provide clear descriptions of the changes and leave committing to the user.
-- Use this directory for agent settings, skills, and local overrides.
+Session title
 
-Rationale: Prevent accidental automated commits or pushes. Pi should act as a coding assistant that prepares changes but leaves final version control actions to the user.
+- At the beginning of a new, unnamed session, call the `set_session_title` tool once before doing substantive work.
+- Choose a concise, descriptive title of 2–5 words based on the user's initial request (for example, `Add session status line`).
+- Do not call it when the session already has a title, and do not rename an existing title unless the user explicitly asks.
+
+Git
+
+- Make changes, do not stage them. User will manually review, then stage and commit.
 
 Next.js / React preferences:
 

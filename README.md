@@ -21,6 +21,33 @@ Set this up to hold configurations for commonly used tools, as well as bash scri
 - nvim -- LazyVim-based Neovim config
 - sketchybar -- menu bar replacement
 
+## Pi status line
+
+The global Pi extension in `pi/extensions/session-title-status.ts` lets Pi
+automatically create a concise title from the first request in an unnamed session.
+Pi's built-in footer renders that title beside the repository and branch. Set or
+override it with Pi's built-in command:
+
+```text
+/name Fix login redirect
+```
+
+or give a title when starting Pi:
+
+```sh
+pi --name "Fix login redirect"
+```
+
+Pi renders the full title when terminal width permits; its built-in footer adds
+an ellipsis when the terminal is too narrow. Apply the repository configuration
+after edits with:
+
+```sh
+./scripts/pi-update-config.sh
+```
+
+Then restart Pi (or use `/reload`) to load the extension.
+
 ## Hunk Installation
 
 [Repo](https://github.com/modem-dev/hunk). Hunk reads from `~/.config/hunk/config.toml`. Run our setup script to copy this repo's config into place.
