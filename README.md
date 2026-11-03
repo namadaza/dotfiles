@@ -48,6 +48,33 @@ after edits with:
 
 Then restart Pi (or use `/reload`) to load the extension.
 
+## Pi PR-to-Slack skill
+
+`pi/skills/vercel-pr-slack/` bundles the PR clipboard script as a Pi skill.
+It copies a Slack-ready snippet with the PR title linked and diff counts as
+inline code. Requires local macOS, Bun, and an authenticated GitHub CLI (`gh`).
+
+Install/update it with the rest of the Pi configuration:
+
+```sh
+./scripts/pi-update-config.sh
+```
+
+Then restart Pi (or use `/reload`) and run:
+
+```text
+/skill:vercel-pr-slack https://github.com/vercel/gtm/pull/5535
+```
+
+You can also ask Pi to copy a PR for Slack. Paste normally into Slack to retain
+the title link and formatting. The skill only copies; it does not post to Slack.
+
+For direct CLI usage, the script now lives inside the skill:
+
+```sh
+bun pi/skills/vercel-pr-slack/scripts/vercel-pr-slack.ts https://github.com/vercel/gtm/pull/5535
+```
+
 ## Hunk Installation
 
 [Repo](https://github.com/modem-dev/hunk). Hunk reads from `~/.config/hunk/config.toml`. Run our setup script to copy this repo's config into place.
