@@ -75,6 +75,70 @@ For direct CLI usage, the script now lives inside the skill:
 bun pi/skills/vercel-pr-slack/scripts/vercel-pr-slack.ts https://github.com/vercel/gtm/pull/5535
 ```
 
+## Worktrunk Installation
+
+Use [Worktrunk](https://worktrunk.dev/) for Git worktree management. It replaces
+this repo's retired custom `wt` script; the `wt` command now comes from Homebrew.
+
+```sh
+brew install worktrunk
+wt config shell install zsh
+exec zsh
+```
+
+The shell integration enables directory switching and tab completion. The repo's
+`ohmyzsh/zshrc.sh` includes the equivalent initialization, but the Oh My Zsh update
+script does not copy that file to `~/.zshrc`; use the install command above for your
+active shell configuration.
+
+Verify with `wt --version` and `type wt` (which should report a shell function).
+Existing Git worktrees are preserved; no worktree or branch migration is performed.
+
+### Worktrunk configuration and local environment files
+
+Apply the global configuration stored in `wt/` (uses Bash, no additional runtime needed):
+
+```sh
+./scripts/wt-update.sh
+```
+
+This installs `config.toml` and `copy-env-local.sh` into
+`${XDG_CONFIG_HOME:-$HOME/.config}/worktrunk/`. The update script replaces the
+installed config, backing up an existing config first if it differs. Edit the
+files in `wt/` and rerun the script for future updates. It does not install or
+replace the Homebrew `wt` command or change shell integration.
+
+Whenever Worktrunk creates a worktree (for example, `wt switch --create feature`),
+the global `pre-start` hook copies `.env.local` files from the **primary worktree**
+(the original clone), preserving relative paths:
+
+```text
+.env.local                     → <new-worktree>/.env.local
+apps/web/.env.local             → <new-worktree>/apps/web/.env.local
+packages/database/.env.local    → <new-worktree>/packages/database/.env.local
+```
+
+- Files are copied, not moved or symlinked; originals and file permissions remain intact.
+- Existing destination files are never overwritten. Missing parent folders are created.
+- Discovery is recursive and does not require files to be tracked or gitignored.
+  Keep `.env.local` ignored in your repositories to avoid committing secrets.
+- Dependencies, build/cache directories, nested repos/submodules/worktrees, and
+  symlinks are skipped (see the helper's `case` block for the directory list).
+- Copying completes before project `pre-start` setup hooks run. Switching to an
+  already-existing worktree does not automatically refresh its environment files.
+
+To populate missing files in an existing worktree, run from that worktree:
+
+```sh
+wt hook pre-start user:copy-env-local
+```
+
+Test the helper without touching your real repos or installed config:
+
+```sh
+bash wt/test-copy-env-local.sh
+```
+
 ## Hunk Installation
 
 [Repo](https://github.com/modem-dev/hunk). Hunk reads from `~/.config/hunk/config.toml`. Run our setup script to copy this repo's config into place.

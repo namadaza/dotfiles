@@ -1,0 +1,4 @@
+# User hooks apply to every repository. Run before project setup needs env files.
+# Worktrunk shell-escapes template variables; do not add quotes around them.
+[pre-start]
+copy-env-local = 'bash "${XDG_CONFIG_HOME:-$HOME/.config}/worktrunk/copy-env-local.sh" {{ primary_worktree_path }} {{ worktree_path }}'

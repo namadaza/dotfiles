@@ -9,3 +9,18 @@ alias pip="pip3"
 alias gitrev="git difftool origin/main...HEAD"
 alias aicost="npx codeburn"
 alias opencodeauth="cat ~/.local/share/opencode/auth.json"
+
+# Stage the current directory, commit with a message, and push.
+# gacp 'my commit message'
+gacp() {
+  if [[ $# -ne 1 || -z "$1" ]]; then
+    print -u2 "Usage: gacp 'commit message'"
+    return 1
+  fi
+  git add . && git commit -m "$1" && git push
+}
+
+# Vercel GTM env vars (run from the destination repo root).
+alias vcge='cp ../gtm/apps/gtm-workflows/.env.local ./apps/gtm-workflows/.env.local'
+# Stop Next.js, Vercel, Vite, and Turbo dev servers across local repos.
+alias vck='pkill -TERM -f "[n]ext dev|[n]ext-server|[v]ercel dev|[v]ite( |$)|[t]urbo dev"'

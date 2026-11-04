@@ -125,3 +125,8 @@ export NPM_TOKEN=
 export VERCEL_TOKEN=
 export GPG_TTY=$(tty)
 export LINEAR_API_KEY=
+
+# Worktrunk: shell directory switching and completions (brew install worktrunk).
+if command -v wt >/dev/null 2>&1; then
+  eval "$(wt config shell init zsh)"
+fi
