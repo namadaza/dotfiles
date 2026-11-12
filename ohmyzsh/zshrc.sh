@@ -130,3 +130,14 @@ export LINEAR_API_KEY=
 if command -v wt >/dev/null 2>&1; then
   eval "$(wt config shell init zsh)"
 fi
+
+# Keep this after all PATH setup (especially Homebrew's shellenv).
+# Reset the old nvm PATH entry so re-sourcing also puts nvm ahead of Homebrew.
+# Sourcing ~/.zshrc intentionally selects the default; use `nvm use` for .nvmrc.
+export NVM_DIR="$HOME/.nvm"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  . "$NVM_DIR/nvm.sh" --no-use
+  nvm deactivate --silent
+  nvm use --silent default
+  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+fi

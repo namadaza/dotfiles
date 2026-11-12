@@ -51,8 +51,9 @@ Then restart Pi (or use `/reload`) to load the extension.
 ## Pi PR-to-Slack skill
 
 `pi/skills/vercel-pr-slack/` bundles the PR clipboard script as a Pi skill.
-It copies a Slack-ready snippet with the PR title linked and diff counts as
-inline code. Requires local macOS, Bun, and an authenticated GitHub CLI (`gh`).
+It copies standard Markdown with the PR title linked and diff counts as
+inline code using `pbcopy`. Requires local macOS, Bun, and an authenticated
+GitHub CLI (`gh`).
 
 Install/update it with the rest of the Pi configuration:
 
@@ -66,8 +67,8 @@ Then restart Pi (or use `/reload`) and run:
 /skill:vercel-pr-slack https://github.com/vercel/gtm/pull/5535
 ```
 
-You can also ask Pi to copy a PR for Slack. Paste normally into Slack to retain
-the title link and formatting. The skill only copies; it does not post to Slack.
+You can also ask Pi to copy a PR for Slack. Paste into Slack's Markdown composer
+with Markdown formatting enabled. The skill only copies; it does not post to Slack.
 
 For direct CLI usage, the script now lives inside the skill:
 

@@ -1,4 +1,4 @@
-theme = "gruvbox-dark-hard"      # graphite, midnight, paper, ember
+theme = "gruvbox-dark-hard"      # gruvbox-dark-hard, github-light-default
 mode = "auto"        # auto, split, stack
 exclude_untracked = false
 line_numbers = true

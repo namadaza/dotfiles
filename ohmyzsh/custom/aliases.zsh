@@ -20,7 +20,7 @@ gacp() {
   git add . && git commit -m "$1" && git push
 }
 
-# Vercel GTM env vars (run from the destination repo root).
-alias vcge='cp ../gtm/apps/gtm-workflows/.env.local ./apps/gtm-workflows/.env.local'
+# Vercel GTM env vars and project config (run from the destination repo root).
+alias vcge='cp ../gtm/apps/gtm-workflows/.env.local ./apps/gtm-workflows/.env.local && mkdir -p ./apps/gtm-workflows/.vercel && cp -R ../gtm/apps/gtm-workflows/.vercel/. ./apps/gtm-workflows/.vercel/'
 # Stop Next.js, Vercel, Vite, and Turbo dev servers across local repos.
 alias vck='pkill -TERM -f "[n]ext dev|[n]ext-server|[v]ercel dev|[v]ite( |$)|[t]urbo dev"'
